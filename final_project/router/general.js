@@ -1,96 +1,57 @@
-// general.js
-// Routes accessible to general users (no authentication required)
+const express = require("express");
+const axios = require("axios"); // Required for async requests
+const books = require("../booksdb"); // Sample book data
+const general = express.Router();
 
-const express = require('express');
-const axios = require('axios'); // For making async HTTP requests if needed
-const books = require('./booksdb.js'); // Preloaded book data
+// Get all books
+general.get("/", (req, res) => {
+    res.json(books);
+});
 
-const public_users = express.Router();
-
-// Helper function: simulate async fetch of books
-const getBooksAsync = async () => {
-    // Normally you would fetch from a database or external API
-    return new Promise((resolve, reject) => {
-        try {
-            resolve(books);
-        } catch (err) {
-            reject(err);
-        }
-    });
-};
-
-// Route 1: Get all books
-public_users.get('/', async (req, res) => {
-    try {
-        const allBooks = await getBooksAsync();
-        res.status(200).json(allBooks);
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving books", error: error.message });
+// Get book by ISBN
+general.get("/isbn/:isbn", (req, res) => {
+    const isbn = req.params.isbn;
+    if (books[isbn]) {
+        res.json({ [isbn]: books[isbn] });
+    } else {
+        res.status(404).json({ message: "Book not found" });
     }
 });
 
-// Route 2: Get book details by ISBN
-public_users.get('/isbn/:isbn', async (req, res) => {
+// Get books by author
+general.get("/author/:author", async (req, res) => {
     try {
-        const isbn = req.params.isbn;
-        const allBooks = await getBooksAsync();
-
-        if (allBooks[isbn]) {
-            res.status(200).json(allBooks[isbn]);
-        } else {
-            res.status(404).json({ message: "Book not found" });
+        const author = decodeURIComponent(req.params.author);
+        const filtered = {};
+        for (const isbn in books) {
+            if (books[isbn].author.toLowerCase() === author.toLowerCase()) {
+                filtered[isbn] = books[isbn];
+            }
         }
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving book", error: error.message });
+        if (Object.keys(filtered).length === 0)
+            return res.status(404).json({ message: "Author not found" });
+        res.json(filtered);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 
-// Route 3: Get books by author
-public_users.get('/author/:author', async (req, res) => {
+// Get books by title
+general.get("/title/:title", async (req, res) => {
     try {
-        const author = req.params.author;
-        const allBooks = await getBooksAsync();
-
-        // Filter books by author
-        const filteredBooks = Object.keys(allBooks)
-            .filter(key => allBooks[key].author === author)
-            .reduce((obj, key) => {
-                obj[key] = allBooks[key];
-                return obj;
-            }, {});
-
-        if (Object.keys(filteredBooks).length > 0) {
-            res.status(200).json(filteredBooks);
-        } else {
-            res.status(404).json({ message: "No books found for this author" });
+        const title = decodeURIComponent(req.params.title);
+        const filtered = {};
+        for (const isbn in books) {
+            if (books[isbn].title.toLowerCase() === title.toLowerCase()) {
+                filtered[isbn] = books[isbn];
+            }
         }
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving books by author", error: error.message });
+        if (Object.keys(filtered).length === 0)
+            return res.status(404).json({ message: "Title not found" });
+        res.json(filtered);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 
-// Route 4: Get books by title
-public_users.get('/title/:title', async (req, res) => {
-    try {
-        const title = req.params.title;
-        const allBooks = await getBooksAsync();
-
-        // Filter books by title
-        const filteredBooks = Object.keys(allBooks)
-            .filter(key => allBooks[key].title === title)
-            .reduce((obj, key) => {
-                obj[key] = allBooks[key];
-                return obj;
-            }, {});
-
-        if (Object.keys(filteredBooks).length > 0) {
-            res.status(200).json(filteredBooks);
-        } else {
-            res.status(404).json({ message: "No books found with this title" });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving books by title", error: error.message });
-    }
-});
-
-module.exports.general = public_users;
+module.exports = general;

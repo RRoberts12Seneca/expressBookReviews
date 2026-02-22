@@ -1,42 +1,14 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const session = require('express-session');
-
-const customer_routes = require('./router/auth_users.js').authenticated;
-const genl_routes = require('./router/general.js').general;
-
+const express = require("express");
 const app = express();
+const bodyParser = require("body-parser");
+const generalRouter = require("./router/general");
+const regd_users = require("./router/auth_users").authenticated;
 
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Session middleware for authenticated users
-app.use(
-  "/customer",
-  session({
-    secret: "fingerprint_customer",
-    resave: true,
-    saveUninitialized: true
-  })
-);
-
-// JWT session-based authentication
-app.use("/customer/auth/*", (req, res, next) => {
-  if (req.session.authorization && req.session.authorization.accessToken) {
-    try {
-      const token = req.session.authorization.accessToken;
-      jwt.verify(token, "access_secret_key");
-      next();
-    } catch (err) {
-      return res.status(401).json({ message: "Unauthorized: Invalid Token" });
-    }
-  } else {
-    return res.status(401).json({ message: "Unauthorized: No Token Provided" });
-  }
-});
-
-// Routes
-app.use("/customer", customer_routes);
-app.use("/", genl_routes);
+// Route files
+app.use("/", generalRouter);
+app.use("/customer/auth", regd_users);
 
 const PORT = 5000;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
