@@ -1,6 +1,6 @@
 const express = require("express");
 const axios = require("axios"); // Required for async requests
-const books = require("../booksdb"); // Sample book data
+const books = require("./booksdb"); // from router/general.js
 const general = express.Router();
 
 // Get all books
